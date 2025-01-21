@@ -4,22 +4,44 @@ import string
 import re
 import random
 import secrets
+import unicodedata
 
 import ckan.model as model
 import ckan.plugins.toolkit as tk
 
 log = logging.getLogger(__name__)
 
-
 def generate_password():
     '''Generate a random password.'''
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(8))
 
+def normalize_and_replace_umlauts(input_str):
+    # Define a mapping for umlauts
+    umlaut_map = {
+        'ä': 'ae',
+        'ö': 'oe',
+        'ü': 'ue',
+        'Ä': 'Ae',
+        'Ö': 'Oe',
+        'Ü': 'Ue',
+        'ß': 'ss'
+    }
+    # Replace umlauts using the mapping
+    for umlaut, replacement in umlaut_map.items():
+        input_str = input_str.replace(umlaut, replacement)
+    # Normalize the string to decompose special characters into base characters
+    normalized_str = unicodedata.normalize('NFD', input_str)
+    # Remove diacritics (e.g., marks like accents) by filtering out combining characters
+    ascii_str = ''.join(c for c in normalized_str if not unicodedata.combining(c))
+    # Remove any remaining special characters (non-alphanumeric)
+    cleaned_str = re.sub(r'[^a-zA-Z0-9\s]', '', ascii_str)
+    return cleaned_str
 
-def ensure_unique_username(given_name):
+def ensure_unique_username(name):
     '''Ensure that the username is unique.'''
-    cleaned_localpart = re.sub(r'[^\w]', '-', given_name).lower()
+    cleaned_name=normalize_and_replace_umlauts(name)
+    cleaned_localpart = re.sub(r'[^\w]', '-', cleaned_name).lower()
 
     if not model.User.get(cleaned_localpart):
         return cleaned_localpart
