@@ -20,24 +20,6 @@ log = logging.getLogger(__name__)
 
 blueprint = Blueprint('sso', __name__)
 
-authorization_endpoint = tk.config.get('ckanext.sso.authorization_endpoint')
-login_url = tk.config.get('ckanext.sso.login_url')
-client_id = tk.config.get('ckanext.sso.client_id')
-redirect_url = tk.config.get('ckanext.sso.redirect_url')
-client_secret = tk.config.get('ckanext.sso.client_secret')
-response_type = tk.config.get('ckanext.sso.response_type')
-scope = tk.config.get('ckanext.sso.scope')
-access_token_url = tk.config.get('ckanext.sso.access_token_url')
-user_info_url = tk.config.get('ckanext.sso.user_info')
-
-sso_client = SSOClient(client_id=client_id, client_secret=client_secret,
-                       authorize_url=authorization_endpoint,
-                       token_url=access_token_url,
-                       redirect_url=redirect_url,
-                       user_info_url=user_info_url,
-                       scope=scope)
-
-
 @blueprint.before_app_request
 def before_app_request():
     bp, action = tk.get_endpoint()
@@ -70,6 +52,7 @@ def _log_user_into_ckan(resp):
 def sso():
     log.info("SSO Login")
     auth_url = None
+    sso_client = SSOClient()
     try:
         auth_url = sso_client.get_authorize_url()
     except Exception as e:
@@ -80,8 +63,9 @@ def sso():
 
 def dashboard():
     data = tk.request.args
+    sso_client = SSOClient()
     token = sso_client.get_token(data['code'])
-    userinfo = sso_client.get_user_info(token, user_info_url)
+    userinfo = sso_client.get_user_info(token)
     log.info("SSO Login: {}".format(userinfo))
     if userinfo:
         pref_username=userinfo.get('preferred_username','')
