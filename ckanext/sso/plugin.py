@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
+
 import logging
+
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as tk
 from ckan.config.declaration import Declaration, Key
 
 import ckanext.sso.helpers as helpers
 from ckanext.sso.views import get_blueprint
-
 
 log = logging.getLogger(__name__)
 
@@ -23,15 +24,15 @@ class SSOPlugin(plugins.SingletonPlugin):
 
     def get_helpers(self):
         return {
-            'check_default_login': helpers.check_default_login,
+            "check_default_login": helpers.check_default_login,
         }
 
     # IConfigurer
 
     def update_config(self, config_):
-        tk.add_template_directory(config_, 'templates')
-        tk.add_public_directory(config_, 'public')
-        tk.add_resource('assets', 'sso')
+        tk.add_template_directory(config_, "templates")
+        tk.add_public_directory(config_, "public")
+        tk.add_resource("assets", "sso")
 
     # IConfigDeclaration
 
@@ -39,15 +40,23 @@ class SSOPlugin(plugins.SingletonPlugin):
 
         declaration.annotate("SSO")
         # declaration.declare_bool(key.ckanext.aiembeddings.ssl_verify)
-        declaration.declare(key.ckanext.sso.authorization_endpoint, "https://sso.example.com/realms/your_realm/protocol/openid-connect/auth")
-        declaration.declare(key.ckanext.sso.access_token_url, "https://sso.example.com/realms/your_realm/protocol/openid-connect/token")
-        declaration.declare(key.ckanext.sso.user_info, "https://sso.example.com/realms/your_realm/protocol/openid-connect/userinfo")
+        declaration.declare(
+            key.ckanext.sso.authorization_endpoint,
+            "https://sso.example.com/realms/your_realm/protocol/openid-connect/auth",
+        )
+        declaration.declare(
+            key.ckanext.sso.access_token_url,
+            "https://sso.example.com/realms/your_realm/protocol/openid-connect/token",
+        )
+        declaration.declare(
+            key.ckanext.sso.user_info,
+            "https://sso.example.com/realms/your_realm/protocol/openid-connect/userinfo",
+        )
         declaration.declare(key.ckanext.sso.client_id, "sso_client_id")
         declaration.declare(key.ckanext.sso.client_secret, "sso_client_secret")
         declaration.declare(key.ckanext.sso.redirect_url, "http://localhost/dashboard")
         declaration.declare(key.ckanext.sso.response_type, "code")
         declaration.declare(key.ckanext.sso.scope, "openid profile email")
-        
 
     def get_blueprint(self):
         return get_blueprint()
