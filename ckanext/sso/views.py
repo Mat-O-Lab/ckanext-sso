@@ -45,6 +45,9 @@ def before_app_request():
         return tk.redirect_to(h.url_for('sso.sso'))
 
 
+
+
+
 def _log_user_into_ckan(resp):
     """ Log the user into different CKAN versions.
     CKAN 2.10 introduces flask-login and login_user method.
@@ -66,7 +69,6 @@ def _log_user_into_ckan(resp):
     log.info(u'User {0}<{1}> logged in successfully'.format(g.user_obj.name,
                                                             g.user_obj.email))
 
-
 def sso():
     log.info("SSO Login")
     auth_url = None
@@ -79,14 +81,15 @@ def sso():
 
 
 def dashboard():
+    
     data = tk.request.args
     token = sso_client.get_token(data['code'])
     userinfo = sso_client.get_user_info(token, user_info_url)
     log.info("SSO Login: {}".format(userinfo))
+    
     if userinfo:
         user_dict = {
-            'name': helpers.ensure_unique_username(
-                userinfo['given_name']),
+            'name': helpers.ensure_unique_username(userinfo['given_name']),
             'email': userinfo['email'],
             'password': helpers.generate_password(),
             'fullname': userinfo['name'],
@@ -94,19 +97,74 @@ def dashboard():
                 'idp': userinfo['sub']
             }
         }
+        
         context = {"model": model, "session": model.Session}
         g.user_obj = helpers.process_user(user_dict)
         g.user = g.user_obj.name
         context['user'] = g.user
         context['auth_user_obj'] = g.user_obj
 
+        
+        keycloak_groups = userinfo.get('groups', [])
+        
+        
+        clean_keycloak_groups = [group.strip('/') for group in keycloak_groups]
+        
+        
+        ckan_organizations = tk.get_action('organization_list')(context, {})
+        ckan_groups = tk.get_action('group_list')(context, {})
+        
+        log.debug(f"cleaanedKeycloak Groups: {clean_keycloak_groups}")
+        log.debug(f"ckan Orga: {ckan_organizations}")
+        log.debug(f"ckan groups: {ckan_groups}")
+        
+        admin_context = {
+            'model': model,
+            'session': model.Session,
+            'ignore_auth': True  
+        }
+        
+        for keycloak_group in clean_keycloak_groups:
+            if keycloak_group in ckan_organizations:
+                try:
+                    
+                    tk.get_action('organization_member_create')(
+                        admin_context,
+                        {
+                            'id': keycloak_group,  
+                            'username': g.user,
+                            'role': 'member'
+                        }
+                    )
+                    log.info(f"User {g.user} added to org {keycloak_group}")
+                except Exception as e:
+                    log.error(f"Failed to add user {g.user} to organization {keycloak_group}: {e}")
+            elif keycloak_group in ckan_groups:
+                try:
+                    
+                    tk.get_action('group_member_create')(
+                        admin_context,
+                        {
+                            'id': keycloak_group,  
+                            'username': g.user,
+                            'role': 'member'
+                        }
+                    )
+                    log.info(f"User {g.user} added to org {keycloak_group}")
+                except Exception as e:
+                    log.error(f"Failed to add user {g.user} to group {keycloak_group}: {e}")
+
         response = tk.redirect_to(tk.url_for('user.me', context))
 
         _log_user_into_ckan(response)
         log.info("Logged in success")
+
         return response
     else:
+
         return tk.redirect_to(tk.url_for('user.login'))
+
+
 
 
 def reset_password():
