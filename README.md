@@ -33,7 +33,6 @@ ckan.plugins = sso {OTHER PLUGINS}
 
 ## ckanext-sso
 ckanext.sso.authorization_endpoint = [authorization_endpoint]
-ckanext.sso.login_url = [login_url]
 ckanext.sso.client_id = [client_id]
 ckanext.sso.redirect_url = [https://myckansite.com/dashboard]
 ckanext.sso.client_secret = [client_secret]
