@@ -45,7 +45,11 @@ def ensure_unique_username(name):
 
     if not model.User.get(cleaned_localpart):
         return cleaned_localpart
-
+    # special case that no proper username is given 
+    if len(cleaned_localpart)<=2:
+        length = 4
+        cleaned_localpart = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+        
     max_name_creation_attempts = 10
 
     for _ in range(max_name_creation_attempts):
