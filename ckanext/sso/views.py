@@ -69,7 +69,7 @@ def dashboard():
     sso_client = SSOClient()
     token = sso_client.get_token(data["code"])
     userinfo = sso_client.get_user_info(token)
-    log.info("SSO Login: {}".format(userinfo))
+    log.debug("SSO Login: {}".format(userinfo))
     
     if userinfo:
         pref_username = userinfo.get("preferred_username", "")
@@ -78,7 +78,7 @@ def dashboard():
         else:
             user_name = helpers.ensure_unique_username(userinfo["name"])
         user_dict = {
-            'name': helpers.ensure_unique_username(userinfo['given_name']),
+            'name': user_name,
             "email": userinfo["email"],
             "password": helpers.generate_password(),
             "fullname": userinfo["name"],
