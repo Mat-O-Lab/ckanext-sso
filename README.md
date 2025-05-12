@@ -27,7 +27,7 @@ To install the extension:
 
 ## Configuration
 
-``` ini
+```ini
 
 ckan.plugins = sso {OTHER PLUGINS}
 
