@@ -3,9 +3,12 @@
 ## Introduction
 **ckanext-sso** is an extension for CKAN, a powerful data management system that makes data accessible and usable. This extension provides Single Sign-On (SSO) capabilities, allowing users to log in to CKAN using various SSO providers.
 
-## Tested on
-- CKAN 2.9
-- CKAN 2.10
+## Compatibility with core CKAN versions
+| CKAN version    | Compatible?   |
+| --------------- | ------------- |
+| 2.9 and earlier  | not tested    |
+| 2.10             | yes    |
+| 2.11            | yes    |
 
 ## Features
 
