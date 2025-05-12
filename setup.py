@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from codecs import open  # To use a consistent encoding
-from os import path
+from os import path, environ
 
 from setuptools import find_packages, setup  # Always prefer setuptools over distutils
 
