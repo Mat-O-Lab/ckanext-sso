@@ -19,10 +19,10 @@ setup(
     description="""An extension for authentication with OIDC/Keycloak""",
     long_description=long_description,
     # The project's main homepage.
-    url="https://github.com/bcgov/ckanext-sso",
+    url="https://github.com/Mat-O-Lab/ckanext-sso",
     # Author details
-    author="""Brandon Sharratt""",
-    author_email="""brandon@highwaythreesolutions.com""",
+    author="""Thomas Hanke""",
+    author_email="""thomas.hanke@iwm.fraunhofer.de""",
     # Choose your license
     license="AGPL",
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
@@ -36,10 +36,10 @@ setup(
         "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.11",
     ],
     # What does your project relate to?
-    keywords="""CKAN""",
+    keywords="""CKAN SSO OIDC""",
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=["contrib", "docs", "tests*"]),
