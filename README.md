@@ -17,19 +17,27 @@
 
 To install the extension:
 
-- activate your virtual environment ie `. /usr/lib/ckan/default/bin/activate`
+1. Activate your CKAN virtual environment, for example:
+```bash
+     . /usr/lib/ckan/default/bin/activate
+```
+2. Use pip to install package
+```bash
+   pip install ckanext-sso
+```
+3. Add `fuseki` to the `ckan.plugins` setting in your CKAN
+   config file (by default the config file is located at
+   `/etc/ckan/default/ckan.ini`).
 
-- Install the requirements `pip install -r requirements.txt`
-
-- Install the package `python setup.py install`
-
-- Add `sso` settings in CKAN config file
+4. Restart CKAN. For example, if you've deployed CKAN with Apache on Ubuntu:
+```bash
+     sudo service apache2 reload
+```
 
 ## Configuration
 
 ```bash
 ckan.plugins = sso {OTHER PLUGINS}
-
 ## ckanext-sso
 ckanext.sso.authorization_endpoint = [authorization_endpoint]
 ckanext.sso.client_id = [client_id]
@@ -57,4 +65,4 @@ This project is licensed under the terms of the [MIT License](LICENSE).
 ## Contact
 
 If you have any questions, please feel free to reach out to us at [
-datHere Support](mailto:<support@dathere.com>).
+datHere Support](mailto:support@dathere.com).
