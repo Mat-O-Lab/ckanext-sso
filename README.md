@@ -25,7 +25,7 @@ To install the extension:
 ```bash
    pip install ckanext-sso
 ```
-3. Add `fuseki` to the `ckan.plugins` setting in your CKAN
+3. Add `sso` to the `ckan.plugins` setting in your CKAN
    config file (by default the config file is located at
    `/etc/ckan/default/ckan.ini`).
 
