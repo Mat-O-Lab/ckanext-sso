@@ -27,8 +27,7 @@ To install the extension:
 
 ## Configuration
 
-```ini
-
+```bash
 ckan.plugins = sso {OTHER PLUGINS}
 
 ## ckanext-sso
