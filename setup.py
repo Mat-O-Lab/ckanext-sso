@@ -9,6 +9,9 @@ here = path.abspath(path.dirname(__file__))
 # Get the long description from the relevant file
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
+    
+with open(path.join(here,"requirements.txt") as f:
+    requirements = f.read().splitlines()
 
 setup(
     name="""ckanext-sso""",
@@ -19,6 +22,7 @@ setup(
     description="""An extension for authentication with OIDC/Keycloak""",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    install_requires=requirements,
     # The project's main homepage.
     url="https://github.com/Mat-O-Lab/ckanext-sso",
     # Author details
