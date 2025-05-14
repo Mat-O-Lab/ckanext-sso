@@ -45,12 +45,13 @@ setup(
     ],
     packages=find_packages(exclude=["contrib", "docs", "tests*"]),
     # What does your project relate to?
+    namespace_packages=["ckanext"],
     keywords="""CKAN SSO OIDC""",
     entry_points="""
         [ckan.plugins]
         sso=ckanext.sso.plugin:SSOPlugin
         [babel.extractors]
-        ckan = ckan.lib.extract:extract_ckan
+        ckan=ckan.lib.extract:extract_ckan
     """,
     message_extractors={
         "ckanext": [
