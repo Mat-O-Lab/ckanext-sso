@@ -43,6 +43,7 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         "Programming Language :: Python :: 3.11",
     ],
+    packages=find_packages(exclude=["contrib", "docs", "tests*"]),
     # What does your project relate to?
     keywords="""CKAN SSO OIDC""",
     entry_points="""
