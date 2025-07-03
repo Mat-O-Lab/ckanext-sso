@@ -9,23 +9,32 @@ log = logging.getLogger(__name__)
 
 
 class SSOClient(object):
-    def __init__(self):
-        self.authorize_url = tk.config.get("ckanext.sso.authorization_endpoint")
-        self.client_id = tk.config.get("ckanext.sso.client_id")
-        self.redirect_url = tk.config.get("ckanext.sso.redirect_url")
-        self.client_secret = tk.config.get("ckanext.sso.client_secret")
-        response_type = tk.config.get("ckanext.sso.response_type")
-        self.scope = tk.config.get("ckanext.sso.scope")
-        self.token_url = tk.config.get("ckanext.sso.access_token_url")
-        self.user_info_url = tk.config.get("ckanext.sso.user_info")
+    def __init__(self, client_id, client_secret, authorize_url, token_url,
+                 redirect_url, user_info_url, scope, logout_url=None):
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.authorize_url = authorize_url
+        self.token_url = token_url
+        self.redirect_url = redirect_url
+        self.user_info_url = user_info_url
+        self.scope = scope
+        self.logout_url = logout_url
 
-    def get_authorize_url(self):
-        log.debug("get_authorize_url")
-        oauth = OAuth2Session(
-            self.client_id, redirect_uri=self.redirect_url, scope=self.scope
-        )
-        authorization_url, state = oauth.authorization_url(self.authorize_url)
+    def get_authorize_url(self, **kwargs):
+        log.debug('get_authorize_url')
+        oauth = OAuth2Session(self.client_id, redirect_uri=self.redirect_url,
+                            scope=self.scope)
+        authorization_url, state = oauth.authorization_url(self.authorize_url, **kwargs)
         return authorization_url
+    
+
+    def get_logout_url(self, return_to=None):
+        """Get Auth0 logout URL"""
+        params = {'client_id': self.client_id}
+        if return_to:
+            params['returnTo'] = return_to
+        from urllib.parse import urlencode
+        return f"{self.logout_url}?{urlencode(params)}"
 
     def get_token(self, code):
         log.debug("get_token")
@@ -42,3 +51,4 @@ class SSOClient(object):
         oauth = OAuth2Session(self.client_id, token=token)
         user_info = oauth.get(self.user_info_url)
         return user_info.json()
+    

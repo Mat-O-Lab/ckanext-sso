@@ -5,10 +5,13 @@ import logging
 import ckan.lib.helpers as h
 import ckan.model as model
 from ckan.plugins import toolkit as tk
-from ckan.views.user import RequestResetView, set_repoze_user
-from flask import Blueprint
 
-import ckanext.sso.helpers as helpers
+import ckan.plugins as plugins
+from ckan.views.user import set_repoze_user, RequestResetView
+from ckan.common import (
+    _, config, g, request, current_user, logout_user, session, login_user
+)
+
 from ckanext.sso.ssoclient import SSOClient
 from ckanext.sso.ldap_client import LDAPClient
 
@@ -16,18 +19,38 @@ g = tk.g
 
 log = logging.getLogger(__name__)
 
-blueprint = Blueprint("sso", __name__)
+blueprint = Blueprint('sso', __name__)
 
+authorization_endpoint = tk.config.get('ckanext.sso.authorization_endpoint')
+login_url = tk.config.get('ckanext.sso.login_url')
+client_id = tk.config.get('ckanext.sso.client_id')
+redirect_url = tk.config.get('ckanext.sso.redirect_url')
+client_secret = tk.config.get('ckanext.sso.client_secret')
+response_type = tk.config.get('ckanext.sso.response_type')
+scope = tk.config.get('ckanext.sso.scope')
+access_token_url = tk.config.get('ckanext.sso.access_token_url')
+user_info_url = tk.config.get('ckanext.sso.user_info')
+logout_url = tk.config.get('ckanext.sso.logout_url') 
+logout_redirect_url = tk.config.get('ckanext.sso.logout_redirect_url')
+
+sso_client = SSOClient(client_id=client_id, 
+                       client_secret=client_secret,
+                       authorize_url=authorization_endpoint,
+                       token_url=access_token_url,
+                       redirect_url=redirect_url,
+                       user_info_url=user_info_url,
+                       scope=scope,
+                       logout_url=logout_url)
 
 @blueprint.before_app_request
 def before_app_request():
     bp, action = tk.get_endpoint()
-    if bp == "user" and action == "login" and helpers.check_default_login():
-        return tk.redirect_to(h.url_for("sso.sso"))
-
-
-
-
+    if bp == 'user' and action == 'login' and helpers.check_default_login():
+        return tk.redirect_to(h.url_for('sso.sso'))
+    if bp == 'user' and action == 'register':
+        return tk.redirect_to(h.url_for('sso.sso_register'))
+    if bp == 'user' and action == 'logout':
+        return tk.redirect_to(h.url_for('sso.sso_logout'))
 
 def _log_user_into_ckan(resp):
     """Log the user into different CKAN versions.
@@ -37,8 +60,6 @@ def _log_user_into_ckan(resp):
     CKAN <= 2.9.5 identifies the user only using the internal id.
     """
     if tk.check_ckan_version(min_version="2.10"):
-        from ckan.common import login_user
-
         login_user(g.user_obj)
         return
 
@@ -63,6 +84,16 @@ def sso():
         return tk.abort(500, "Error getting auth url: {}".format(e))
     return tk.redirect_to(auth_url)
 
+def sso_register():
+    log.info("SSO Register")
+    auth_url = None
+    try:
+        auth_url = sso_client.get_authorize_url()
+    except Exception as e:
+        log.error("Error getting auth url: {}".format(e))
+        return tk.abort(500, "Error getting auth url: {}".format(e))
+    return tk.redirect_to(auth_url)
+
 
 def dashboard():
     
@@ -74,35 +105,40 @@ def dashboard():
         token = sso_client.get_token(data["code"])
         userinfo = sso_client.get_user_info(token)
         log.debug("SSO Login: {}".format(userinfo))
-    
-    if userinfo:
-        pref_username = userinfo.get("preferred_username", "")
-        if pref_username:
-            user_name = helpers.ensure_unique_username(pref_username)
-        else:
-            user_name = helpers.ensure_unique_username(userinfo["name"])
+        username = userinfo.get('given_name') or userinfo.get('nickname')
+        if not username:
+            log.error("No given_name or nickname provided by SSO")
+            return tk.abort(400, "Missing required user information")
+            
         user_dict = {
-            'name': user_name,
-            "email": userinfo["email"],
-            "password": helpers.generate_password(),
-            "fullname": userinfo["name"],
-            "plugin_extras": {"idp": userinfo["sub"]},
+            'name': helpers.ensure_unique_username(username),
+            'email': userinfo['email'],
+            'password': helpers.generate_password(),
+            'fullname': userinfo['name'],
+            'plugin_extras': {
+                'idp': userinfo['sub']
+            }
         }
-        log.debug(f"User Info: {user_dict}")
-        #ldap info
-        ldap_department_num=None
-        if "email" in userinfo.keys():
-            try:
-                ldap_client = LDAPClient()
-            except Exception as e:
-                log.debug(f"{e}")
-                ldap_info=None
-            else:
-                ldap_info=ldap_client.query_user_by_email(userinfo["email"])
-                ldap_department=ldap_info.get("department",None)[0]
-                ldap_department_num=ldap_info.get("departmentNumber",None)[0]
-                log.debug(f"LDAP department: {ldap_department}-{ldap_department_num}")
-        
+        if userinfo:
+          #ldap info
+          ldap_department_num=None
+          if "email" in userinfo.keys():
+              try:
+                  ldap_client = LDAPClient()
+              except Exception as e:
+                  log.debug(f"{e}")
+                  ldap_info=None
+              else:
+                  ldap_info=ldap_client.query_user_by_email(userinfo["email"])
+                  ldap_department=ldap_info.get("department",None)[0]
+                  ldap_department_num=ldap_info.get("departmentNumber",None)[0]
+                  log.debug(f"LDAP department: {ldap_department}-{ldap_department_num}")
+    
+        picture_url = (userinfo.get('picture') or 
+                      userinfo.get('avatar') or 
+                      userinfo.get('image'))
+        if picture_url:
+            user_dict['image_url'] = picture_url
         context = {"model": model, "session": model.Session}
         g.user_obj = helpers.process_user(user_dict)
         g.user = g.user_obj.name
@@ -166,9 +202,30 @@ def dashboard():
 
         return response
     else:
-        return tk.redirect_to(tk.url_for("user.login"))
+        return tk.redirect_to(tk.url_for('user.login'))
+    
 
+def sso_logout():
+    for item in plugins.PluginImplementations(plugins.IAuthenticator):
+        response = item.logout()
+        if response:
+            return response
+    user = current_user.name
+    if not user:
+        return h.redirect_to('user.login')
 
+    came_from = request.args.get('came_from', '')
+    logout_user()
+
+    field_name = config.get("WTF_CSRF_FIELD_NAME")
+    if session.get(field_name):
+        session.pop(field_name)
+
+    if h.url_is_local(came_from):
+        return h.redirect_to(str(came_from))
+    
+    logout_url = sso_client.get_logout_url(return_to=logout_redirect_url)
+    return tk.redirect_to(logout_url)
 
 
 def reset_password():
@@ -188,11 +245,14 @@ def reset_password():
         return tk.redirect_to(tk.url_for("user.login"))
     return RequestResetView().post()
 
-
-blueprint.add_url_rule("/sso", view_func=sso)
-blueprint.add_url_rule("/dashboard", view_func=dashboard)
-blueprint.add_url_rule("/reset_password", view_func=reset_password, methods=["POST"])
+blueprint.add_url_rule('/sso', view_func=sso)
+blueprint.add_url_rule('/sso_register', view_func=sso_register)
+blueprint.add_url_rule('/dashboard', view_func=dashboard)
+blueprint.add_url_rule('/sso_logout', view_func=sso_logout)
+blueprint.add_url_rule('/reset_password', view_func=reset_password,
+                       methods=['POST'])
 
 
 def get_blueprint():
     return blueprint
+
